@@ -1,22 +1,14 @@
-/* An old program I had completely forgotten about until I found it on google
- * by accident. It was written for FreeBSD to snif packets and calculate 
- * their size to display every second sort of like the ifstat program.
- *
- * Haven't ported it for Linux yet but it might be possible with the
- * freebsd-glue package in ubuntu.
- *
- * Should compile with the following on BSD.
- * gcc -lpcap -o snifstat snifstat.c
- *
- * by Stefan Midjich (aka nocturnal) - swehack [at] gmail [dot] com
- *
- * Original header and code below. A piece of nostalgia. :)
- */
+/* Rewrite of an old program I wrote for FreeBSD. Snifstat is meant to
+   capture packets according to a provided BPF filter, using libpcap, and
+   calculate the size of captured packets to show in the output. Like the
+   tool called ifstat. Output is updated each second with a new size of all
+   captured packets.
 
-/* this application captures packets destined to and from 
- * a specified host, it then tries to calculate in and out 
- * traffic statistics and display it like ifstat 
- * by nocturnal [at] swehack [dot] se */
+	 by Stefan Midjich (swehack at gmail dot com) - 2016
+
+	 Rewrite is first meant to port from libpcap 0.x to 1.0. And then from
+	 FreeBSD to Linux.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,7 +45,7 @@
 #include <pcap.h>
 
 #define APP_NAME	"snifstat"
-#define APP_VERSION	0.2
+#define APP_VERSION	0.3
 
 unsigned int calc_traf_io(char *, struct ether_header *);
 int ethaddrsncmp(const char *, const char *, size_t);
@@ -78,7 +70,7 @@ int main(int argc, char **argv) {
 	char *filter = NULL;
 	const u_char *packet = NULL;
 	struct pcap_pkthdr header;
-	
+
 	unsigned char *ether_addrs = NULL;
 	struct ifaddrs *ifa = NULL;
 	struct sockaddr_dl *sdl = NULL;
@@ -88,7 +80,7 @@ int main(int argc, char **argv) {
 
 
 	struct ether_header *ethernet = NULL;
-	
+
 	unsigned int iteration = 0, total_iteration = 0;
 	double cur_in, cur_out;
 	unsigned short cur_ws = 0, new_ws, old_ws, ws_change;
@@ -96,10 +88,10 @@ int main(int argc, char **argv) {
 
 	unsigned int *resetp = &reset;
 
-	if(argc < 4) {
+	/*if(argc < 4) {
 		usage(argv[0]);
 		exit(-1);
-	}
+	}*/
 
 	while((argch = getopt(argc, argv, "i:bc:hv")) != -1) {
 		switch(argch) {
@@ -109,7 +101,7 @@ int main(int argc, char **argv) {
 					optreset = 1;
 				} else {
 					usage(argv[0]);
-					exit(-1);
+					exit(1);
 				}
 				break;
 			case 'b':
@@ -121,48 +113,51 @@ int main(int argc, char **argv) {
 				break;
 			case 'h':
 				usage(argv[0]);
-				exit(-1);
-			case 'v': /* LOL WUT?! */
+				exit(0);
+			case 'v':
 				printf("%s v%.1f by nocturnal [at] swehack [dot] se\n", APP_NAME, APP_VERSION);
-				exit(-1);
+				exit(0);
 		}
 	}
 
+	/* Exit if no filter provided. */
 	if(argc - optind < 1) {
 		usage(argv[0]);
-		exit(-1);
+		exit(1);
 	}
 
 	filter = argv[optind];
 
+	/* Determine IPv4 network and netmask of device ifname. */
 	if(pcap_lookupnet(ifname, &netp, &netmask, errbuf) == -1) {
 		fprintf(stderr, "pcap_lookupnet: %s\n", errbuf);
-		exit(-1);
+		exit(1);
 	}
 
+  /* Wrapper for pcap_create and pcap_activate in pcap v1.0. */
 	if((pcap = pcap_open_live(ifname, 65535, 1, 10, errbuf)) == NULL) {
 		fprintf(stderr, "pcap_open_live: %s\n", errbuf);
 		exit(-1);
 	}
 
-	if(pcap_compile(pcap, &filterd, filter, 1, netmask) == -1) {
+	if(pcap_compile(pcap, &filterd, filter, 0, netmask) == -1) {
 		fprintf(stderr, "pcap_compile: %s\n", pcap_geterr(pcap));
-		exit(-1);
+		exit(1);
 	}
 
 	if(pcap_setfilter(pcap, &filterd) == -1) {
 		fprintf(stderr, "pcap_setfilter: %s\n", pcap_geterr(pcap));
-		exit(-1);
+		exit(1);
 	}
 
 	if(signal(SIGALRM, reset_count) == SIG_ERR) {
 		perror("signal: ");
-		exit(-1);
+		exit(1);
 	}
 
 	if(getifaddrs(&ifa) == -1) {
 		perror("getifaddrs: ");
-		exit(-1);
+		exit(1);
 	}
 
 	for(;ifa;ifa = ifa->ifa_next) {
@@ -170,7 +165,7 @@ int main(int argc, char **argv) {
 			sdl = (struct sockaddr_dl *)ifa->ifa_addr;
 			if((ether_addrs = malloc(sdl->sdl_alen)) == NULL) {
 				perror("malloc: ");
-				exit(-1);
+				exit(1);
 			}
 			memcpy(ether_addrs, LLADDR(sdl), sdl->sdl_alen);
 			break;
@@ -193,7 +188,7 @@ int main(int argc, char **argv) {
 
 		if(setitimer(ITIMER_REAL, itvp, &oitv) < 0) {
 			fprintf(stderr, "setitimer: \n");
-			exit(-1);
+			exit(1);
 		}
 
 		cur_in = 0.0;
@@ -224,7 +219,7 @@ int main(int argc, char **argv) {
 			cur_in *= 8;
 			cur_out *= 8;
 		}
-		
+
 		if(iteration >= ws_change || total_iteration == 0) {
 			printf("%11s\n%5s in %5s out\n", ifname, (show_in_bits == 1) ? bits_prefix : bytes_prefix, (show_in_bits == 1) ? bits_prefix : bytes_prefix);
 			if(iteration > 1) {
@@ -254,7 +249,7 @@ unsigned int calc_traf_io(char *ether_addrs, struct ether_header *ethernet) {
 	/* 0 = in
 	 * 1 = out
 	 * 2 = error
-	 * GET IT!? GET IT?!?!??!!? :/ */
+	 */
 	if(ethaddrsncmp(ether_addrs, ethernet->ether_shost, sizeof(ether_addrs)) == 0) {
 		return(1);
 	}

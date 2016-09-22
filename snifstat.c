@@ -4,10 +4,10 @@
    tool called ifstat. Output is updated each second with a new size of all
    captured packets.
 
-	 by Stefan Midjich (swehack at gmail dot com) - 2016
+   by Stefan Midjich (swehack at gmail dot com) - 2016
 
-	 Rewrite is first meant to port from libpcap 0.x to 1.0. And then from
-	 FreeBSD to Linux.
+   Rewrite is first meant to port from libpcap 0.x to 1.0. And then from
+   FreeBSD to Linux.
  */
 
 #include <stdio.h>

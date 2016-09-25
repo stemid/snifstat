@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <sys/types.h>
+#include <signal.h>
 
 /* getifaddrs(3) */
 #include <ifaddrs.h>
@@ -17,14 +18,21 @@
 /* timerclear(3) */
 #include <sys/time.h>
 
-#include <signal.h>
+/* TODO: Support more BSDs. */
+#ifdef __OpenBSD__
 
-#ifdef __FreeBSD__
-/* BSD IFNAMSIZ */
+/* Pretty much all of this is for the get_hw_address function. */
+#include <errno.h>
 #include <net/if.h>
+#include <net/route.h>
+#include <net/if_dl.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <net/if_types.h>
+#include <netinet/if_ether.h>
+#include <ifaddrs.h>
 
-void lookup_addrs(char *);
-u_int32_t ipaddrtonetmask(u_int32_t);
+uint8_t * get_hw_address(char *, int);
 
 #endif
 

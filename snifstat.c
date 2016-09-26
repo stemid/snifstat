@@ -14,28 +14,22 @@ double cur_in, cur_out;
 uint8_t *mac_address = NULL;
 char show_suffix[255] = "Bytes";
 unsigned int traffic_unit = 0;
+unsigned short ws_iter_count = 0;
+char ifname[IFNAMSIZ];
+unsigned int sniff_timeout = 1;
 
 int main(int argc, char **argv) {
-	char ifname[IFNAMSIZ];
-	unsigned int sniff_timeout = 1;
 	unsigned int dflag = 0;
 	int argch;
 	char *filter = NULL;
-	uint8_t *local_mac = NULL;
 	int loop_status;
 
 	char errbuf[PCAP_ERRBUF_SIZE];
 	bpf_u_int32 netp, netmask;
 	struct bpf_program comp_filter;
 
-	/*
-	struct pcap_pkthdr header;
-  const u_char *packet = NULL;*/
-
 	struct itimerval itv, oitv;
 	struct itimerval *itvp = &itv;
-
-	unsigned short ws_current, ws_iter_count = 0;
 
 	while((argch = getopt(argc, argv, "kmgdi:t:")) != -1) {
 		switch(argch) {
@@ -70,7 +64,7 @@ int main(int argc, char **argv) {
 
 	/* Exit if missing positional filter argument. */
 	if(argc - optind < 1) {
-		usage(argv[0]);
+		usage();
 		exit(1);
 	}
 
@@ -99,8 +93,13 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
+	if(atexit(exit_callback) != 0) {
+		perror("atexit: ");
+		exit(1);
+	}
+
 	/* Signal the end of packet capturing. */
-	if(signal(SIGALRM, break_capture) == SIG_ERR) {
+	if(signal(SIGALRM, output_data) == SIG_ERR) {
 		perror("signal: failed to capture SIGALRM");
 		exit(1);
 	}
@@ -111,17 +110,16 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	if((local_mac = get_hw_address(ifname, dflag)) == NULL) {
+	if((mac_address = get_hw_address(ifname, dflag)) == NULL) {
 		fprintf(stderr, "get_hw_address: failed to get hw address from %s\n", ifname);
 		exit(1);
 	}
 
-	mac_address = local_mac;
-
 	if(dflag) {
 		fprintf(stderr, "Found NIC %s:MAC[%02X:%02X:%02X:%02X:%02X:%02X]\n",
 				ifname,
-				local_mac[0], local_mac[1], local_mac[2], local_mac[3], local_mac[4], local_mac[5]);
+				mac_address[0], mac_address[1], mac_address[2], 
+				mac_address[3], mac_address[4], mac_address[5]);
 	}
 
 	/* Clear the timer struct and setup a timeout of sniff_timeout seconds. */
@@ -134,44 +132,29 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	while((loop_status = pcap_loop(capture, -1, capture_callback, NULL)) < 0) {
-		/* Reset timer. */
-    if(setitimer(ITIMER_REAL, itvp, &oitv) < 0) {
-      fprintf(stderr, "setitimer: \n");
-      exit(1);
-    }
+	output_header(ifname);
 
-		ws_current = get_windowsize();
+	loop_status = pcap_loop(capture, -1, capture_callback, NULL);
 
-		/* Display header whenever the old one scrolls off edge by three lines. */
-		if(ws_iter_count >= ws_current-3 || ws_iter_count == 0) {
-			ws_iter_count = 0;
-			output_header(ifname);
-		}
-
-		ws_iter_count++;
-
-		/* Output formatted traffic data. */
-		output_data(cur_in, cur_out);
-
-		/* Reset global traffic values. */
-		cur_in = 0.0;
-		cur_out = 0.0;
-	}
-
-	pcap_close(capture);
 	exit(0);
 }
 
-/* TODO: Maybe check so that header.len isn't larger than a double. */
+/* capture_callback counts the amount of traffic and stores it in two global
+ * values, one for each direction the traffic is going.
+ * TODO: Maybe check so that header.len isn't larger than a double. */
 void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_char* packet) {
 	struct ether_header *ethernet = (struct ether_header *)packet;
   const struct sniff_ip *ip = NULL;
   const struct sniff_tcp *tcp = NULL;
+	const struct sniff_udp *udp = NULL;
+	const struct ip *ip_header = NULL;
   const char *payload = NULL;
   int ip_size;
   int tcp_size;
+	int udp_size = 0;
   int payload_size;
+	double total_size;
+	unsigned int ip_header_len;
 
   /* Debug
 	fprintf(stderr, "cmp(%d): mac_address[%02X:%02X:%02X:%02X:%02X:%02X](%lu)"
@@ -201,35 +184,72 @@ void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_ch
     return;
   }
 
+	ip_header = (struct ip*)(packet+SIZE_ETHERNET);
+	ip_header_len = IP_HL(ip)*4;
+
+	/* Check for UDP packet. 
+	 * TODO: Finish UDP support. */
+	if(ip_header->ip_p == IPPROTO_UDP) {
+		udp = (struct sniff_udp*)((u_char*)ip+ip_header_len);
+		udp_size = ntohs(udp->uh_ulen);
+		/*fprintf(stderr, "sport: %d, dport: %d, udp_size: %f\n", 
+				ntohs(udp->uh_sport), ntohs(udp->uh_dport), udp_size);*/
+	}
+
   payload = (u_char *)(packet + SIZE_ETHERNET + ip_size + tcp_size);
   payload_size = ntohs(ip->ip_len) - (ip_size + tcp_size);
 
+	total_size = payload_size+tcp_size+ip_size+udp_size;
+
+	/*fprintf(stderr, "total_size: %f\n", total_size);*/
+
 	/* Check direction of traffic by comparing with current hosts hw address. */
-	if(memcmp(mac_address, ethernet->ether_dhost, 6) == 0) {
-		cur_in += header->len;
-    /*cur_in += (double)payload_size;*/
-    /*cur_in /= 1024;*/
-    if(traffic_unit == 2) {
-      cur_in /= 1024/1024;
-    }
+	if(memcmp(mac_address, ethernet->ether_dhost, MAX_ETHER_LEN) == 0) {
+		cur_in += total_size;
 	}
 
-	if(memcmp(mac_address, ethernet->ether_shost, 6) == 0) {
-		cur_out += header->len;
-    /*cur_out += (double)payload_size;*/
-    /*cur_out /= 1024;*/
-    if(traffic_unit == 2) {
-      cur_out /= 1024/1024;
-    }
+	if(memcmp(mac_address, ethernet->ether_shost, MAX_ETHER_LEN) == 0) {
+		cur_out += total_size;
 	}
 	return;
 }
 
-void output_header(char *ifname) {
-	int show_in_bits = 1;
-	char bits_suffix[] = "Kbps";
-	char bytes_suffix[] = "kB/s";
+/* output_data updates stdout with the current traffic amount, as counted
+ * by capture_callback. */
+void output_data(int signal) {
+	struct itimerval itv, oitv;
+	struct itimerval *itvp = &itv;
+	unsigned short ws_current = get_windowsize();
 
+	/* Clear the timer struct and setup a timeout of sniff_timeout seconds. */
+	timerclear(&itvp->it_interval);
+	itvp->it_value.tv_sec = sniff_timeout;
+	itvp->it_value.tv_usec = 0;
+
+	if(setitimer(ITIMER_REAL, itvp, &oitv) < 0) {
+		fprintf(stderr, "setitimer: failed setting timer\n");
+		exit(1);
+	}
+
+	/* Display header whenever the old one scrolls off edge by three lines. */
+	if(ws_iter_count >= ws_current-3) {
+		ws_iter_count = 0;
+		output_header(ifname);
+	}
+
+	ws_iter_count++;
+
+	/* Output formatted traffic data. */
+	fprint_data(cur_in, cur_out);
+
+	/* Reset global traffic values. */
+	cur_in = 0.0;
+	cur_out = 0.0;
+
+	return;
+}
+
+void output_header(char *ifname) {
 	fprintf(stdout, "%11s [%02X:%02X:%02X:%02X:%02X:%02X]\n%5s in %5s out\n", 
 			ifname,
 			mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5],
@@ -241,9 +261,38 @@ void output_header(char *ifname) {
 	return;
 }
 
-void output_data(double in, double out) {
+void fprint_data(double in, double out) {
+	switch(traffic_unit) {
+		case 1:
+			in /= 1000;
+			out /= 1000;
+			break;
+		case 2:
+			in /= 1000000;
+			out /= 1000000;
+			break;
+		case 3:
+			in /= 1000000000;
+			out /= 1000000000;
+			break;
+	}
+
 	fprintf(stdout, "%8.2lf %9.2lf\n", in, out);
 	fflush(stdout);
+	return;
+}
+
+void exit_callback(void) {
+	cleanup_capture(0);
+	return;
+}
+
+void cleanup_capture(int signal) {
+	if(capture != NULL) {
+		pcap_breakloop(capture);
+		pcap_close(capture);
+		capture = NULL;
+	}
 	return;
 }
 
@@ -258,20 +307,19 @@ unsigned short get_windowsize(void) {
   return(ws.ws_row);
 }
 
-void break_capture(int signal) {
-	pcap_breakloop(capture);
-	return;
-}
-
-void cleanup_capture(int signal) {
-	pcap_breakloop(capture);
-	pcap_close(capture);
-	return;
-}
-
-void usage(const char *appname) {
-	printf("Usage: %s -i <interface> <filter>\n", appname);
-	printf("\t-i <interface>\t Specify interface to capture from\n");
+void usage(void) {
+	printf("%s\n\n"
+			"Usage: %s [-kmgd] [-t <timeout>] -i <interface> <filter>\n"
+			"\t<filter> is a BPF, see pcap-filter(7) for more info.\n"
+			"\t-i <interface>\t Specify interface to capture from\n"
+			"\t-t <timeout>\t How often to display traffic stats\n"
+			"\t-k \t\t Show values in KiloBytes\n"
+			"\t-m \t\t Show values in MegaBytes\n"
+			"\t-g \t\t Show values in GigaBytes\n"
+			"\t-h \t\t Show help\n\n"
+			"%s\n"
+			"%s\n",
+			APP_DESC, APP_NAME, APP_COPYRIGHT, APP_DISCLAIMER);
 
 	return;
 }

@@ -1,7 +1,7 @@
 #define APP_NAME "snifstat"
 #define APP_DESC "Sniff network and calculate traffic amount"
 #define APP_COPYRIGHT	"Copyright (c) Stefan Midjich"
-#define APP_DISCLAIMER	"THERE IS ABSOLUTELY NO WARRANTY FOR THIS PROGRAM."
+#define APP_DISCLAIMER	"This program comes with ABSOLUTELY NO WARRANTY"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,7 +23,9 @@
 /* timerclear(3) */
 #include <sys/time.h>
 
-/* TODO: Support more BSDs. */
+#include <arpa/inet.h>
+#include <netinet/ip.h>
+
 #if defined(__OpenBSD__) || (defined(__APPLE__) && defined( __MACH__)) || defined(__FreeBSD__)
 
 /* Pretty much all of this is for the get_hw_address function. */
@@ -32,7 +34,6 @@
 #include <net/route.h>
 #include <net/if_dl.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <net/if_types.h>
 #include <netinet/if_ether.h>
 #include <ifaddrs.h>
@@ -57,12 +58,13 @@ uint8_t * get_hw_address(char *, int);
 uint8_t * get_hw_address(char *, int);
 #endif
 
+#define MAX_ETHER_LEN 6
+
 /* duh -lpcap */
 #include <pcap.h>
 
 /* Pcap related */
 #define SIZE_ETHERNET 14
-#define ETHER_ADDR_LEN 6
 
 /* IP header */
 struct sniff_ip {
@@ -108,12 +110,22 @@ struct sniff_tcp {
   u_short th_urp;                 /* urgent pointer */
 };
 
-void usage(const char *);
-void break_capture(int);
+struct sniff_udp {
+	u_short	uh_sport;		/* source port */
+	u_short	uh_dport;		/* destination port */
+	u_short	uh_ulen;		/* datagram length */
+	u_short	uh_sum;			/* datagram checksum */
+};
+
+#define SIZE_UDP 8
+
+void usage(void);
+void output_data(int);
+void exit_callback(void);
 void cleanup_capture(int);
 unsigned short get_windowsize(void);
 int hwaddrscmp(uint8_t *, uint8_t *);
 void output_header(char *);
-void output_data(double, double);
+void fprint_data(double, double);
 void capture_callback(u_char *, const struct pcap_pkthdr *, const u_char *);
 

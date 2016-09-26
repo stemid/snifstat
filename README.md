@@ -15,6 +15,7 @@ More or less the original snifstat.c is still on [gist](https://gist.github.com/
 # TODO
 
  * Finish usage() function.
+ * Solve all these: ``grep -rC2 'TODO: ' .``
  * Cleanup code.
  * Have autoconf decide between Linux and BSD.
  * Makefile

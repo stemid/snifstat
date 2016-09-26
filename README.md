@@ -8,9 +8,25 @@ Now I've made an effort to re-write the program for libpcap 1.0, Linux and in th
 
 More or less the original snifstat.c is still on [gist](https://gist.github.com/stemid/8946ac0beeadbfc894421be449ea31e9).
 
+# Download
+
+For now clone the git repo. 
+
+	$ git clone https://github.com/stemid/snifstat.git
+
 # Compile
 
+On Linux and Mac OS this should work.
+
+	$ cd snifstat
 	$ make
+
+## On OpenBSD
+
+On BSD first install GNU Make and then compile. 
+
+	$ sudo pkg_add -r gmake
+	$ gmake
 
 # Run
 

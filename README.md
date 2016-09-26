@@ -10,16 +10,19 @@ More or less the original snifstat.c is still on [gist](https://gist.github.com/
 
 # Compile
 
-	$ gcc -lpcap -o snifstat linux.c snifstat_v2.c
+  $ make
+
+# Run
+
+  $ ./snifstat -h
+  ...
+  $ sudo ./snifstat -t 2 -i en3 'tcp'
 
 # TODO
 
- * Finish usage() function.
- * Solve all these: ``grep -rC2 'TODO: ' .``
- * Cleanup code.
- * Have autoconf decide between Linux and BSD.
- * Makefile
- * Support more BSDs than OpenBSD in snifstat.h.
+ * Support for counting UDP packet size.
+ * Solve remaining: ``grep -rC2 'TODO: ' .``
+ * Cleanup & comment code.
  * Package for RPM, Deb and maybe others.
  * Add other output formats so output can be read by scripts.
  * Ask for help from reddit/IRC to ensure my coding is sound.

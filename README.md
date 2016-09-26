@@ -10,7 +10,7 @@ More or less the original snifstat.c is still on [gist](https://gist.github.com/
 
 # Compile
 
-	gcc -lpcap -o snifstat linux.c snifstat\_v2.c
+	$ gcc -lpcap -o snifstat linux.c snifstat_v2.c
 
 # TODO
 

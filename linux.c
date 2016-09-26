@@ -1,12 +1,7 @@
-/* Functions to look up ethernet address on Linux systems.
-*/
+/* Functions to look up ethernet address on Linux systems. */
 
 #include "snifstat.h"
 
-/* TODO: Put ethernet address into an argument pointer instead. Have the 
- * pointer defined and allocated outside of this function according to 
- * limits of MAX_ADDR_LEN.
- */
 uint8_t * get_hw_address(char *ifname, int dflag) {
 	struct ifaddrs *ifa = NULL, *ifap = NULL;
 	struct ifreq req;
@@ -34,12 +29,11 @@ uint8_t * get_hw_address(char *ifname, int dflag) {
 		if(strncmp(ifname, ifa->ifa_name, sizeof(*ifname)) == 0) {
 			strncpy(req.ifr_name, ifa->ifa_name, IFNAMSIZ);
 			if(ioctl(sd, SIOCGIFHWADDR, &req ) != -1 ) {
-				/* TODO: Find some other size because MAX_ADDR_LEN at 32 is too large. */
-				if((mac = malloc(sizeof(uint8_t)*6)) == NULL) {
+				if((mac = malloc(sizeof(uint8_t)*MAX_ETHER_LEN)) == NULL) {
 					perror("malloc: ");
 					return(NULL);
 				}
-				memcpy(mac, (uint8_t*)req.ifr_ifru.ifru_hwaddr.sa_data, 6);
+				memcpy(mac, (uint8_t*)req.ifr_ifru.ifru_hwaddr.sa_data, MAX_ETHER_LEN);
 				break;
 			}
 		}

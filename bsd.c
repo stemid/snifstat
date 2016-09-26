@@ -20,12 +20,12 @@ uint8_t * get_hw_address(char *ifname, int dflag) {
 			continue;
 
 		sdl = (struct sockaddr_dl *) ifa->ifa_addr;
-		if (sdl->sdl_family == AF_LINK && sdl->sdl_type == IFT_ETHER && sdl->sdl_alen == 6) {
-			if((mac = malloc(sizeof(uint8_t)*6)) == NULL) {
+		if (sdl->sdl_family == AF_LINK && sdl->sdl_type == IFT_ETHER && sdl->sdl_alen == MAX_ETHER_LEN) {
+			if((mac = malloc(sizeof(uint8_t)*MAX_ETHER_LEN)) == NULL) {
 				perror("malloc: ");
 				return(NULL);
 			}
-			memcpy(mac, (uint8_t*)LLADDR(sdl), 6);
+			memcpy(mac, (uint8_t*)LLADDR(sdl), MAX_ETHER_LEN);
 			/*mac = (uint8_t*)LLADDR(sdl);*/
 		}
 	}

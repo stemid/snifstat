@@ -12,6 +12,8 @@
 pcap_t *capture = NULL;
 double cur_in, cur_out;
 uint8_t *mac_address = NULL;
+char show_suffix[255] = "Bytes";
+unsigned int traffic_unit = 0;
 
 int main(int argc, char **argv) {
 	char ifname[IFNAMSIZ];
@@ -35,8 +37,23 @@ int main(int argc, char **argv) {
 
 	unsigned short ws_current, ws_iter_count = 0;
 
-	while((argch = getopt(argc, argv, "di:t:")) != -1) {
+	while((argch = getopt(argc, argv, "kmgdi:t:")) != -1) {
 		switch(argch) {
+      case 'k':
+        strncpy(show_suffix, "kByte/s", 255);
+        traffic_unit = 1;
+        break;
+
+      case 'm':
+        strncpy(show_suffix, "MByte/s", 255);
+        traffic_unit = 2;
+        break;
+
+      case 'g':
+        strncpy(show_suffix, "GByte/s", 255);
+        traffic_unit = 3;
+        break;
+
 			case 't':
 				sniff_timeout = atoi(optarg);
 				break;
@@ -149,35 +166,63 @@ int main(int argc, char **argv) {
 /* TODO: Maybe check so that header.len isn't larger than a double. */
 void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_char* packet) {
 	struct ether_header *ethernet = (struct ether_header *)packet;
+  const struct sniff_ip *ip = NULL;
+  const struct sniff_tcp *tcp = NULL;
+  const char *payload = NULL;
+  int ip_size;
+  int tcp_size;
+  int payload_size;
 
-	/*fprintf(stderr, "cmp(%d): mac_address[%02X:%02X:%02X:%02X:%02X:%02X](%lu) => ether_dhost[%02X:%02X:%02X:%02X:%02X:%02X](%lu)\n", 
-			MAX_ADDR_LEN, mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5], sizeof(mac_address),
-			ethernet->ether_dhost[0], ethernet->ether_dhost[1], ethernet->ether_dhost[2], ethernet->ether_dhost[3], ethernet->ether_dhost[4], ethernet->ether_dhost[5], sizeof(ethernet->ether_dhost));
-			*/
+  /* Debug
+	fprintf(stderr, "cmp(%d): mac_address[%02X:%02X:%02X:%02X:%02X:%02X](%lu)"
+      "=> ether_dhost[%02X:%02X:%02X:%02X:%02X:%02X](%lu)\n", 
+			MAX_ADDR_LEN, 
+      mac_address[0], mac_address[1], mac_address[2], 
+      mac_address[3], mac_address[4], mac_address[5], sizeof(mac_address),
+			ethernet->ether_dhost[0], ethernet->ether_dhost[1], ethernet->ether_dhost[2], 
+      ethernet->ether_dhost[3], ethernet->ether_dhost[4], ethernet->ether_dhost[5], sizeof(ethernet->ether_dhost));
+      */
+
+
+  /* Get the length of packet */
+  ip = (struct sniff_ip*)(packet+SIZE_ETHERNET);
+  ip_size = IP_HL(ip)*4;
+
+  if(IP_HL(ip) >= 5 && ip_size < IP_HL(ip)*4) {
+    fprintf(stderr, "capture_callback: Malformed IP datagram\n");
+    return;
+  }
+
+  tcp = (struct sniff_tcp*)(packet+SIZE_ETHERNET+ip_size);
+  tcp_size = TH_OFF(tcp)*4;
+
+  if(tcp_size < TH_OFF(tcp)*4) {
+    fprintf(stderr, "capture_callback: Malformed TCP segment\n");
+    return;
+  }
+
+  payload = (u_char *)(packet + SIZE_ETHERNET + ip_size + tcp_size);
+  payload_size = ntohs(ip->ip_len) - (ip_size + tcp_size);
 
 	/* Check direction of traffic by comparing with current hosts hw address. */
 	if(memcmp(mac_address, ethernet->ether_dhost, 6) == 0) {
 		cur_in += header->len;
+    /*cur_in += (double)payload_size;*/
+    /*cur_in /= 1024;*/
+    if(traffic_unit == 2) {
+      cur_in /= 1024/1024;
+    }
 	}
 
 	if(memcmp(mac_address, ethernet->ether_shost, 6) == 0) {
 		cur_out += header->len;
+    /*cur_out += (double)payload_size;*/
+    /*cur_out /= 1024;*/
+    if(traffic_unit == 2) {
+      cur_out /= 1024/1024;
+    }
 	}
 	return;
-}
-
-/* Compare two uint8_t arrays. */
-int hwaddrscmp(uint8_t *a1, uint8_t *a2) {
-	do {
-		if(*a1++ != *a2++) {
-			fprintf(stderr, "cmp a1[%02X] => a2[%02X]\n", *a1, *a2);
-			return(*(uint8_t*)a1-*(uint8_t*)(a2-1));
-		}
-	} while(a1 != NULL || a2 != NULL);
-
-	fprintf(stderr, "End of comparison\n");
-
-	return(0);
 }
 
 void output_header(char *ifname) {
@@ -188,8 +233,10 @@ void output_header(char *ifname) {
 	fprintf(stdout, "%11s [%02X:%02X:%02X:%02X:%02X:%02X]\n%5s in %5s out\n", 
 			ifname,
 			mac_address[0], mac_address[1], mac_address[2], mac_address[3], mac_address[4], mac_address[5],
-			(show_in_bits == 1) ? bits_suffix : bytes_suffix, 
-			(show_in_bits == 1) ? bits_suffix : bytes_suffix);
+      show_suffix, show_suffix);
+			/*(show_in_bits == 1) ? bits_suffix : bytes_suffix, 
+			(show_in_bits == 1) ? bits_suffix : bytes_suffix);*/
+
 	fflush(stdout);
 	return;
 }

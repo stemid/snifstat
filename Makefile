@@ -12,11 +12,8 @@ ifeq ($(UNAME), Darwin)
 	platform_files=bsd.c
 endif
 
-$(TARGET): snifstat.o
-	gcc -lpcap -o $@ $^
-
-snifstat.o: snifstat.c
-	gcc -o $@ $(platform_files) $<
+$(TARGET): snifstat.c
+	gcc -lpcap -o $@ $(platform_files) $<
 
 clean:
 	rm -f *.o snifstat

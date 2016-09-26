@@ -19,7 +19,7 @@
 #include <sys/time.h>
 
 /* TODO: Support more BSDs. */
-#ifdef __OpenBSD__
+#if defined(__OpenBSD__) || defined(__APPLE__ && __MACH__) || defined(__FreeBSD__)
 
 /* Pretty much all of this is for the get_hw_address function. */
 #include <errno.h>

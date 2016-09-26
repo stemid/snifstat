@@ -10,13 +10,13 @@ More or less the original snifstat.c is still on [gist](https://gist.github.com/
 
 # Compile
 
-  $ make
+	$ make
 
 # Run
 
-  $ ./snifstat -h
-  ...
-  $ sudo ./snifstat -t 2 -i en3 'tcp'
+	$ ./snifstat -h
+	...
+	$ sudo ./snifstat -t 2 -i en3 'tcp'
 
 # TODO
 

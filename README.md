@@ -14,11 +14,11 @@ More or less the original snifstat.c is still on [gist](https://gist.github.com/
 
 # TODO
 
-	* Finish usage() function.
-	* Cleanup code.
-	* Have autoconf decide between Linux and BSD.
-	* Makefile
-	* Support more BSDs than OpenBSD in snifstat.h.
-	* Package for RPM, Deb and maybe others.
-	* Add other output formats so output can be read by scripts.
-	* Ask for help from reddit/IRC to ensure my coding is sound.
+ * Finish usage() function.
+ * Cleanup code.
+ * Have autoconf decide between Linux and BSD.
+ * Makefile
+ * Support more BSDs than OpenBSD in snifstat.h.
+ * Package for RPM, Deb and maybe others.
+ * Add other output formats so output can be read by scripts.
+ * Ask for help from reddit/IRC to ensure my coding is sound.

@@ -194,10 +194,13 @@ void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_ch
     udp_size = ntohs(udp->uh_ulen);
     /*fprintf(stderr, "sport: %d, dport: %d, udp_size: %f\n", 
       ntohs(udp->uh_sport), ntohs(udp->uh_dport), udp_size);*/
-  }
 
-  payload = (u_char *)(packet + SIZE_ETHERNET + ip_size + tcp_size);
-  payload_size = ntohs(ip->ip_len) - (ip_size + tcp_size);
+    payload = (u_char *)(packet + SIZE_ETHERNET + ip_size + udp_size);
+    payload_size = ntohs(ip->ip_len) - (ip_size + udp_size);
+  } else {
+    payload = (u_char *)(packet + SIZE_ETHERNET + ip_size + tcp_size);
+    payload_size = ntohs(ip->ip_len) - (ip_size + tcp_size);
+  }
 
   total_size = payload_size+tcp_size+ip_size+udp_size;
 

@@ -36,7 +36,7 @@ On BSD first install GNU Make and then compile.
 
 # TODO
 
- * Support for counting UDP packet size.
+ * Rework capture\_callback to calculate proper size for tcp and UDP packets.
  * Solve remaining: ``grep -rC2 'TODO: ' .``
  * Cleanup & comment code.
  * Package for RPM, Deb and maybe others.

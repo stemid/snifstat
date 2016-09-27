@@ -8,6 +8,7 @@ Now I've made an effort to re-write the program for libpcap 1.0, Linux and in th
 
 More or less the original snifstat.c is still on [gist](https://gist.github.com/stemid/8946ac0beeadbfc894421be449ea31e9).
 
+
 # Download
 
 For now clone the git repo. 
@@ -36,7 +37,7 @@ On BSD first install GNU Make and then compile.
 
 # TODO
 
- * Rework capture\_callback to calculate proper size for tcp and UDP packets.
+ * Support more physical layers than just Ethernet and 802.11 (WiFi).
  * Solve remaining: ``grep -rC2 'TODO: ' .``
  * Cleanup & comment code.
  * Package for RPM, Deb and maybe others.

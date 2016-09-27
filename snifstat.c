@@ -16,6 +16,7 @@ unsigned int traffic_unit = 0;
 unsigned short ws_iter_count = 0;
 char ifname[IFNAMSIZ];
 unsigned int sniff_timeout = 1;
+uint8_t phys_size = 14;
 
 int main(int argc, char **argv) {
   unsigned int dflag = 0;
@@ -114,6 +115,11 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+	/* Adjust physical segment size for WiFi. */
+	if(pcap_datalink(capture) == DLT_IEEE802_11) {
+		phys_size = 22;
+	}
+
   if(dflag) {
     fprintf(stderr, "Found NIC %s:MAC[%02X:%02X:%02X:%02X:%02X:%02X]\n",
         ifname,
@@ -168,7 +174,7 @@ void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_ch
 
 
   /* Get the length of packet */
-  ip = (struct sniff_ip*)(packet+SIZE_ETHERNET);
+  ip = (struct sniff_ip*)(packet+phys_size);
   ip_size = IP_HL(ip)*4;
 
   if(IP_HL(ip) >= 5 && ip_size < IP_HL(ip)*4) {
@@ -176,7 +182,7 @@ void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_ch
     return;
   }
 
-  tcp = (struct sniff_tcp*)(packet+SIZE_ETHERNET+ip_size);
+  tcp = (struct sniff_tcp*)(packet+phys_size+ip_size);
   tcp_size = TH_OFF(tcp)*4;
 
   if(tcp_size < TH_OFF(tcp)*4) {
@@ -184,7 +190,7 @@ void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_ch
     return;
   }
 
-  ip_header = (struct ip*)(packet+SIZE_ETHERNET);
+  ip_header = (struct ip*)(packet+phys_size);
   ip_header_len = IP_HL(ip)*4;
 
   /* Check for UDP packet. 
@@ -195,10 +201,10 @@ void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_ch
     /*fprintf(stderr, "sport: %d, dport: %d, udp_size: %f\n", 
       ntohs(udp->uh_sport), ntohs(udp->uh_dport), udp_size);*/
 
-    payload = (u_char *)(packet + SIZE_ETHERNET + ip_size + udp_size);
+    payload = (u_char *)(packet + phys_size + ip_size + udp_size);
     payload_size = ntohs(ip->ip_len) - (ip_size + udp_size);
   } else {
-    payload = (u_char *)(packet + SIZE_ETHERNET + ip_size + tcp_size);
+    payload = (u_char *)(packet + phys_size + ip_size + tcp_size);
     payload_size = ntohs(ip->ip_len) - (ip_size + tcp_size);
   }
 

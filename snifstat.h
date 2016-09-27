@@ -111,10 +111,10 @@ struct sniff_tcp {
 };
 
 struct sniff_udp {
-	u_short	uh_sport;		/* source port */
-	u_short	uh_dport;		/* destination port */
-	u_short	uh_ulen;		/* datagram length */
-	u_short	uh_sum;			/* datagram checksum */
+  u_short	uh_sport;		/* source port */
+  u_short	uh_dport;		/* destination port */
+  u_short	uh_ulen;		/* datagram length */
+  u_short	uh_sum;			/* datagram checksum */
 };
 
 #define SIZE_UDP 8

@@ -9,17 +9,17 @@
 #include "snifstat.h"
 
 pcap_t *capture = NULL;
-double cur_in, cur_out;
 uint8_t *mac_address = NULL;
-char show_suffix[255] = "Bytes";
-unsigned int traffic_unit = 0;
-unsigned short ws_iter_count = 0;
+double cur_in, cur_out;
+char show_suffix[32] = "Bytes";
 char ifname[IFNAMSIZ];
+uint8_t phys_size;
 unsigned int sniff_timeout = 1;
-uint8_t phys_size = 14;
+unsigned int traffic_unit = 0;
+unsigned int dflag = 0;
+unsigned short ws_iter_count = 0;
 
 int main(int argc, char **argv) {
-  unsigned int dflag = 0;
   int argch;
   char *filter = NULL;
   int loop_status;
@@ -34,17 +34,17 @@ int main(int argc, char **argv) {
   while((argch = getopt(argc, argv, "kmgdi:t:")) != -1) {
     switch(argch) {
       case 'k':
-        strncpy(show_suffix, "kByte/s", 255);
+        strncpy(show_suffix, "kByte/s", 32);
         traffic_unit = 1;
         break;
 
       case 'm':
-        strncpy(show_suffix, "MByte/s", 255);
+        strncpy(show_suffix, "MByte/s", 32);
         traffic_unit = 2;
         break;
 
       case 'g':
-        strncpy(show_suffix, "GByte/s", 255);
+        strncpy(show_suffix, "GByte/s", 32);
         traffic_unit = 3;
         break;
 
@@ -93,6 +93,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+	/* Cleanup callback. */
   if(atexit(exit_callback) != 0) {
     perror("atexit: ");
     exit(1);
@@ -110,28 +111,44 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+	/* Get the NICs HW address to determine flow of packets later. */
   if((mac_address = get_hw_address(ifname, dflag)) == NULL) {
     fprintf(stderr, "get_hw_address: failed to get hw address from %s\n", ifname);
     exit(1);
   }
 
-	/* Adjust physical segment size for WiFi. */
-	if(pcap_datalink(capture) == DLT_IEEE802_11) {
-		phys_size = 22;
-	}
+	/* Select a pysical layer segment size. */
+	switch(pcap_datalink(capture)) {
+		case DLT_EN10MB: /* Ethernet */
+			phys_size = 14;
+			break;
 
-  if(dflag) {
-    fprintf(stderr, "Found NIC %s:MAC[%02X:%02X:%02X:%02X:%02X:%02X]\n",
-        ifname,
-        mac_address[0], mac_address[1], mac_address[2], 
-        mac_address[3], mac_address[4], mac_address[5]);
-  }
+		case DLT_IEEE802: /* WiFi */
+			phys_size = 22;
+			break;
+
+		case DLT_FDDI: /* Fiber interface */
+			phys_size = 21;
+			break;
+
+		case DLT_LOOP: /* OpenBSD loop device or RAW device */
+			phys_size = 12;
+			break;
+
+		case DLT_NULL:
+			phys_size = 4;
+
+		default:
+			phys_size = 0;
+			break;
+	}
 
   /* Clear the timer struct and setup a timeout of sniff_timeout seconds. */
   timerclear(&itvp->it_interval);
   itvp->it_value.tv_sec = sniff_timeout;
   itvp->it_value.tv_usec = 0;
 
+	/* This will cause a SIGALARM to be sent to output current traffic stats. */
   if(setitimer(ITIMER_REAL, itvp, &oitv) < 0) {
     fprintf(stderr, "setitimer: failed setting timer\n");
     exit(1);
@@ -139,41 +156,29 @@ int main(int argc, char **argv) {
 
   output_header(ifname);
 
+	/* Main pcap loop that will capture packets in a buffer. */
   loop_status = pcap_loop(capture, -1, capture_callback, NULL);
 
   exit(0);
 }
 
-/* capture_callback counts the amount of traffic and stores it in two global
- * values, one for each direction the traffic is going.
- * TODO: Maybe check so that header.len isn't larger than a double. */
+/* capture_callback is called once for every packet. Counts the amount of 
+ * traffic and stores it in two global values, one for each direction the 
+ * traffic is going. */
 void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_char* packet) {
   struct ether_header *ethernet = (struct ether_header *)packet;
   const struct sniff_ip *ip = NULL;
   const struct sniff_tcp *tcp = NULL;
   const struct sniff_udp *udp = NULL;
-  const struct ip *ip_header = NULL;
-  const char *payload = NULL;
-  int ip_size;
-  int tcp_size;
-  int udp_size = 0;
-  int payload_size;
-  double total_size;
-  unsigned int ip_header_len;
+  const u_char *payload = NULL;
+  uint16_t ip_size;
+  uint16_t tcp_size = 0;
+  uint16_t udp_size = 0;
+  uint32_t payload_size = 0;
+  uint32_t total_size = 0;
 
-  /* Debug
-     fprintf(stderr, "cmp(%d): mac_address[%02X:%02X:%02X:%02X:%02X:%02X](%lu)"
-     "=> ether_dhost[%02X:%02X:%02X:%02X:%02X:%02X](%lu)\n", 
-     MAX_ADDR_LEN, 
-     mac_address[0], mac_address[1], mac_address[2], 
-     mac_address[3], mac_address[4], mac_address[5], sizeof(mac_address),
-     ethernet->ether_dhost[0], ethernet->ether_dhost[1], ethernet->ether_dhost[2], 
-     ethernet->ether_dhost[3], ethernet->ether_dhost[4], ethernet->ether_dhost[5], 
-     sizeof(ethernet->ether_dhost));
-     */
-
-
-  /* Get the length of packet */
+	/* Get IP header by counting past start of packet by size of physical layer
+	 * segment.*/
   ip = (struct sniff_ip*)(packet+phys_size);
   ip_size = IP_HL(ip)*4;
 
@@ -182,35 +187,35 @@ void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_ch
     return;
   }
 
-  tcp = (struct sniff_tcp*)(packet+phys_size+ip_size);
-  tcp_size = TH_OFF(tcp)*4;
+	/* Get TCP header by counting from the ip header + size of ip header. */
+	if(ip->ip_p == IPPROTO_TCP) {
+		tcp = (struct sniff_tcp*)((u_char*)ip+ip_size);
+		tcp_size = ip->ip_len - ip_size;
 
-  if(tcp_size < TH_OFF(tcp)*4) {
-    fprintf(stderr, "capture_callback: Malformed TCP segment\n");
-    return;
-  }
+		if(TH_OFF(tcp) >= 5 && tcp_size < TH_OFF(tcp)*4) {
+			fprintf(stderr, "capture_callback: Malformed TCP segment\n");
+			return;
+		}
 
-  ip_header = (struct ip*)(packet+phys_size);
-  ip_header_len = IP_HL(ip)*4;
+		/* First get payload offset in packet. */
+		payload = (u_char*)(packet + phys_size + ip_size + tcp_size);
 
-  /* Check for UDP packet. 
-   * TODO: Finish UDP support. */
-  if(ip_header->ip_p == IPPROTO_UDP) {
-    udp = (struct sniff_udp*)((u_char*)ip+ip_header_len);
+		/* Then segment size of payload. */
+		payload_size = ntohs(ip->ip_len) - (ip_size + tcp_size);
+	}
+
+	/* Get UDP header in the same way as TCP header. */
+  if(ip->ip_p == IPPROTO_UDP) {
+    udp = (struct sniff_udp*)((u_char*)ip+ip_size);
     udp_size = ntohs(udp->uh_ulen);
-    /*fprintf(stderr, "sport: %d, dport: %d, udp_size: %f\n", 
-      ntohs(udp->uh_sport), ntohs(udp->uh_dport), udp_size);*/
 
-    payload = (u_char *)(packet + phys_size + ip_size + udp_size);
-    payload_size = ntohs(ip->ip_len) - (ip_size + udp_size);
-  } else {
-    payload = (u_char *)(packet + phys_size + ip_size + tcp_size);
-    payload_size = ntohs(ip->ip_len) - (ip_size + tcp_size);
+		/* Same drill as TCP above. */
+		payload = (u_char*)(packet + phys_size + ip_size + udp_size);
+		payload_size = ntohs(ip->ip_len) - (ip_size + udp_size);
   }
 
-  total_size = payload_size+tcp_size+ip_size+udp_size;
-
-  /*fprintf(stderr, "total_size: %f\n", total_size);*/
+	/* Total size of packet in bytes, not counting the physical layer. */
+  total_size = payload_size+ip_size+tcp_size+udp_size;
 
   /* Check direction of traffic by comparing with current hosts hw address. */
   if(memcmp(mac_address, ethernet->ether_dhost, MAX_ETHER_LEN) == 0) {
@@ -264,8 +269,6 @@ void output_header(char *ifname) {
       mac_address[0], mac_address[1], mac_address[2], 
       mac_address[3], mac_address[4], mac_address[5],
       show_suffix, show_suffix);
-  /*(show_in_bits == 1) ? bits_suffix : bytes_suffix, 
-    (show_in_bits == 1) ? bits_suffix : bytes_suffix);*/
 
   fflush(stdout);
   return;
@@ -285,6 +288,10 @@ void fprint_data(double in, double out) {
       in /= 1000000000;
       out /= 1000000000;
       break;
+		default:
+			in /= 1;
+			out /= 1;
+			break;
   }
 
   fprintf(stdout, "%8.2lf %9.2lf\n", in, out);

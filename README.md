@@ -1,45 +1,18 @@
 # Snifstat
 
-This started as a single file program on FreeBSD 4.x ca. 10 years ago. I needed a program that would sniff traffic according to a BPF rule, just like tcpdump, and then count all the packets it had captured and display traffic stats sort of like ifstat. 
+Ever wanted to see how much traffic would go through a tcpdump filter? I did, and I wanted it output every second or so to the screen so I could monitor it while troubleshooting. 
 
-So snifstat was born. 
-
-Now I've made an effort to re-write the program for libpcap 1.0, Linux and in the process I solved some amateur mistakes I made back then. 
-
-More or less the original snifstat.c is still on [gist](https://gist.github.com/stemid/8946ac0beeadbfc894421be449ea31e9).
-
+Snifstat does that. You specify an interface, a filter and it captures packets according to that filter, calculates the sizes and each second outputs a summary of the packet sizes on screen.
 
 # Download
 
-For now clone the git repo. 
+  - Go to [releases](/stemid/snifstat/releases/new) and download the latest release
+  - Follow the instructions in INSTALL.md
 
-	$ git clone https://github.com/stemid/snifstat.git
+Or clone the git repo for some specific branch.
 
-# Compile
+	$ git clone -b snifstat-1.0 https://github.com/stemid/snifstat.git
 
-On Linux and Mac OS this should work.
+# Install
 
-	$ cd snifstat
-	$ make
-
-## On OpenBSD
-
-On BSD first install GNU Make and then compile. 
-
-	$ sudo pkg_add -r gmake
-	$ gmake
-
-# Run
-
-	$ ./snifstat -h
-	...
-	$ sudo ./snifstat -t 2 -i en3 'tcp'
-
-# TODO
-
- * Do 1.0 release.
- * Package for RPM, Deb and maybe others.
- * Test on FreeBSD.
- * Add other output formats so output can be read by scripts.
- * Ask for help from reddit/IRC to ensure my coding is sound.
- * Unit test could inject packets while running program in aforementioned "script mode" to verify function.
+See [INSTALL.md](INSTALL.md) for more instructions.

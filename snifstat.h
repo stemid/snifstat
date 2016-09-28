@@ -10,6 +10,7 @@
 
 #include <sys/types.h>
 #include <signal.h>
+#include <errno.h>
 
 /* getifaddrs(3) */
 #include <ifaddrs.h>
@@ -29,7 +30,6 @@
 #if defined(__OpenBSD__) || (defined(__APPLE__) && defined( __MACH__)) || defined(__FreeBSD__)
 
 /* Pretty much all of this is for the get_hw_address function. */
-#include <errno.h>
 #include <net/if.h>
 #include <net/route.h>
 #include <net/if_dl.h>

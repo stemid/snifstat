@@ -1,6 +1,7 @@
 UNAME := $(shell uname)
 TARGET = snifstat
 platform_files = linux.c
+INSTALL_PREFIX ?= /usr/local/bin
 
 ifeq ($(UNAME), Linux)
 	platform_files=linux.c
@@ -17,3 +18,6 @@ $(TARGET): snifstat.c
 
 clean:
 	rm -f *.o snifstat
+
+install:
+	install -m0755 snifstat $(INSTALL_PREFIX)/

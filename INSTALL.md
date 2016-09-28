@@ -17,7 +17,7 @@ On OpenBSD you must use gmake for GNU Make.
 
 ## OpenBSD 5.x dependencies
 
-	$ sudo pkg\_add -r gmake gcc
+	$ sudo pkg_add -r gmake gcc
 
 # Install
 
@@ -25,4 +25,4 @@ On OpenBSD you must use gmake for GNU Make.
 
 The Makefile is very simple for now so if you need to install somewhere else use ``INSTALL_PREFIX`` in the make args.
 
-	$ make INSTALL\_PREFIX=$HOME/bin install
+	$ make INSTALL_PREFIX=$HOME/bin install

@@ -6,7 +6,7 @@ Snifstat does that. You specify an interface, a filter and it captures packets a
 
 # Install
 
-  - Go to [releases](/releases/latest) and download the latest release.
+  - Go to releases and download the latest release.
   - Follow the instructions in [INSTALL.md](INSTALL.md).
 
 Or clone the git repo for some specific branch.

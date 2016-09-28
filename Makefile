@@ -13,7 +13,7 @@ ifeq ($(UNAME), Darwin)
 endif
 
 $(TARGET): snifstat.c
-	gcc -lpcap -o $@ $(platform_files) $<
+	gcc -o $@ $(platform_files) $< -lpcap
 
 clean:
 	rm -f *.o snifstat

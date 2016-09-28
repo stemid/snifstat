@@ -10,9 +10,9 @@ uint8_t * get_hw_address(char *ifname, int dflag) {
   struct sockaddr_dl *sdl = NULL;
   uint8_t *mac = NULL;
 
-  if (getifaddrs(&ifap) != 0) {
-    fprintf(stderr, "getifaddrs: %s\n", strerror(errno));
-    /* NOTREACHED */
+  if (getifaddrs(&ifap) == -1) {
+		fprintf(stderr, "getifaddrs: %s\n", strerror(errno));
+		return(NULL);
   }
 
   for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
@@ -26,7 +26,7 @@ uint8_t * get_hw_address(char *ifname, int dflag) {
         return(NULL);
       }
       memcpy(mac, (uint8_t*)LLADDR(sdl), MAX_ETHER_LEN);
-      /*mac = (uint8_t*)LLADDR(sdl);*/
+			break;
     }
   }
 

@@ -9,14 +9,14 @@ uint8_t * get_hw_address(char *ifname, int dflag) {
   uint8_t *mac = NULL;
 
   if(getifaddrs(&ifa) == -1) {
-    perror("getifaddrs: ");
+		fprintf(stderr, "getifaddrs: %s\n", strerror(errno));
     return(NULL);
   }
 
-  ifap = ifa;
+	ifap = ifa;
 
   if(sd < 0) {
-    freeifaddrs(ifa);
+    freeifaddrs(ifap);
     return(NULL);
   }
 

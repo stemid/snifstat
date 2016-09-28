@@ -37,9 +37,12 @@ On BSD first install GNU Make and then compile.
 
 # TODO
 
- * Support more physical layers than just Ethernet and 802.11 (WiFi).
+ * Support more [physical layers](http://www.tcpdump.org/linktypes.html) than just Ethernet and 802.11 (WiFi).
  * Solve remaining: ``grep -rC2 'TODO: ' .``
  * Cleanup & comment code.
+ * Test on FreeBSD.
+ * Do 1.0 release.
  * Package for RPM, Deb and maybe others.
  * Add other output formats so output can be read by scripts.
  * Ask for help from reddit/IRC to ensure my coding is sound.
+ * Unit test could inject packets while running program in aforementioned "script mode" to verify function.

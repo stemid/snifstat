@@ -11,7 +11,8 @@
 pcap_t *capture = NULL;
 uint8_t *mac_address = NULL;
 char ifname[IFNAMSIZ];
-uint8_t phys_size;
+
+static uint8_t phys_size;
 static double cur_in, cur_out;
 static char show_suffix[32] = "Bytes";
 static unsigned int sniff_timeout = 1;
@@ -59,6 +60,12 @@ int main(int argc, char **argv) {
       case 'd':
         dflag = 1;
         break;
+
+      default:
+        fprintf(stderr, "Incorrect argument provided\n");
+        usage();
+        exit(1);
+
     }
   }
 

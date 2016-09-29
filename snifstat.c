@@ -10,14 +10,14 @@
 
 pcap_t *capture = NULL;
 uint8_t *mac_address = NULL;
-double cur_in, cur_out;
-char show_suffix[32] = "Bytes";
 char ifname[IFNAMSIZ];
 uint8_t phys_size;
-unsigned int sniff_timeout = 1;
-unsigned int traffic_unit = 0;
-unsigned int dflag = 0;
-unsigned short ws_iter_count = 0;
+static double cur_in, cur_out;
+static char show_suffix[32] = "Bytes";
+static unsigned int sniff_timeout = 1;
+static unsigned int traffic_unit = 0;
+static unsigned int dflag = 0;
+static unsigned short ws_iter_count = 0;
 
 int main(int argc, char **argv) {
   int argch;

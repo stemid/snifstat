@@ -16,8 +16,9 @@ static uint8_t phys_size;
 static double cur_in, cur_out;
 static char show_suffix[32] = "Bytes";
 static unsigned int sniff_timeout = 1;
-static unsigned int traffic_unit = 0;
-static unsigned int dflag = 0;
+static uint8_t traffic_unit = 0;
+static uint8_t dflag = 0;
+static uint8_t batch_mode = 0;
 static unsigned short ws_iter_count = 0;
 
 int main(int argc, char **argv) {
@@ -32,8 +33,12 @@ int main(int argc, char **argv) {
     struct itimerval itv, oitv;
     struct itimerval *itvp = &itv;
 
-    while((argch = getopt(argc, argv, "kmgdi:t:")) != -1) {
+    while((argch = getopt(argc, argv, "Bkmgdi:t:")) != -1) {
         switch(argch) {
+            case 'B':
+                batch_mode = 1;
+                break;
+
             case 'k':
                 strncpy(show_suffix, "kByte/s", 32);
                 traffic_unit = 1;
@@ -161,7 +166,8 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    output_header(ifname);
+    if(batch_mode == 0)
+        output_header(ifname);
 
     /* Main pcap loop that will capture packets in a buffer. */
     loop_status = pcap_loop(capture, -1, capture_callback, NULL);
@@ -255,7 +261,8 @@ void output_data(int signal) {
     /* Display header whenever the old one scrolls off edge by three lines. */
     if(ws_iter_count >= ws_current-3) {
         ws_iter_count = 0;
-        output_header(ifname);
+        if(batch_mode == 0)
+            output_header(ifname);
     }
 
     ws_iter_count++;
@@ -301,7 +308,12 @@ void fprint_data(double in, double out) {
             break;
     }
 
-    fprintf(stdout, "%8.2lf %9.2lf\n", in, out);
+    if(batch_mode == 0) {
+        fprintf(stdout, "%8.2lf %9.2lf\n", in, out);
+    } else {
+        fprintf(stdout, "%s;%lf,%lf\n", ifname, in, out);
+    }
+
     fflush(stdout);
     return;
 }

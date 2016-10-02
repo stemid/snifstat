@@ -1,3 +1,7 @@
+# Release
+
+First of all check the releases page on github to see if there's a finished release for your platform.
+
 # Compile
 
 	$ cd snifstat-1.0
@@ -18,6 +22,14 @@ On OpenBSD you must use gmake for GNU Make.
 ## OpenBSD 5.x dependencies
 
 	$ sudo pkg_add -r gmake gcc
+
+## FreeBSD 10.x dependencies
+
+FreeBSD 10 by default does not come with sudo. 
+
+	$ su -
+	Password: ***
+	$ pkg install gcc gmake
 
 # Install
 

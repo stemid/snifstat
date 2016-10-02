@@ -29,6 +29,7 @@ int main(int argc, char **argv) {
     char errbuf[PCAP_ERRBUF_SIZE];
     bpf_u_int32 netp, netmask;
     struct bpf_program comp_filter;
+    int nic_dlt;
 
     struct itimerval itv, oitv;
     struct itimerval *itvp = &itv;
@@ -129,8 +130,10 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+    nic_dlt = pcap_datalink(capture);
+
     /* Select a pysical layer segment size. */
-    switch(pcap_datalink(capture)) {
+    switch(nic_dlt) {
         case DLT_EN10MB: /* Ethernet */
             phys_size = 14;
             break;
@@ -154,6 +157,9 @@ int main(int argc, char **argv) {
             phys_size = 0;
             break;
     }
+
+    if(dflag)
+        fprintf(stderr, "phys_size: %d, nic_dlt: %d\n", phys_size, nic_dlt);
 
     /* Clear the timer struct and setup a timeout of sniff_timeout seconds. */
     timerclear(&itvp->it_interval);
@@ -195,6 +201,8 @@ void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_ch
     ip = (struct sniff_ip*)(packet+phys_size);
     ip_size = IP_HL(ip)*4;
 
+    /* These are some recommendations from tcpdump examples to check for
+     * malformed IP headers. */
     if(IP_HL(ip) >= 5 && ip_size < IP_HL(ip)*4) {
         fprintf(stderr, "capture_callback: Malformed IP datagram\n");
         return;
@@ -205,6 +213,7 @@ void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_ch
         tcp = (struct sniff_tcp*)((u_char*)ip+ip_size);
         tcp_size = ip->ip_len - ip_size;
 
+        /* Again examples from tcpdump-group to check for malformed headers.*/
         if(TH_OFF(tcp) >= 5 && tcp_size < TH_OFF(tcp)*4) {
             fprintf(stderr, "capture_callback: Malformed TCP segment\n");
             return;
@@ -228,7 +237,7 @@ void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_ch
     }
 
     /* Total size of packet in bytes, not counting the physical layer. */
-    total_size = payload_size+ip_size+tcp_size+udp_size;
+    total_size = phys_size+ip_size+tcp_size+udp_size+payload_size;
 
     /* Check direction of traffic by comparing with current hosts hw address. */
     if(memcmp(mac_address, ethernet->ether_dhost, MAX_ETHER_LEN) == 0) {

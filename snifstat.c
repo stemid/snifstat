@@ -1,10 +1,27 @@
-/* Snifstat is meant to capture packets on an interface, using a filter
+/*
+ * This file is part of Snifstat.
+ *
+ * Snifstat is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Snifstat is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Snifstat.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Snifstat is meant to capture packets on an interface, using a filter
  * defined in cli args, and calculate sizes of the packets captured to
  * produce output similar to the old tool called ifstat. Output will be
  * total packet size for each second.
  *
  * by Stefan Midjich <swehack at gmail dot com>
- */
+*/
 
 #include "snifstat.h"
 

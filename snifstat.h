@@ -103,6 +103,9 @@ struct sniff_ip {
 #define IP_HL(ip)               (((ip)->ip_vhl) & 0x0f)
 #define IP_V(ip)                (((ip)->ip_vhl) >> 4)
 
+/* Remaining TCP and UDP header structs are only left for educational purposes
+ * as I now count the total packet length in the ip header. */
+
 /* TCP header */
 typedef u_int tcp_seq;
 
@@ -137,6 +140,7 @@ struct sniff_udp {
 
 #define SIZE_UDP 8
 
+/* Function prototypes */
 void usage(void);
 void output_data(int);
 void exit_callback(void);

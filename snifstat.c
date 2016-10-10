@@ -204,13 +204,7 @@ int main(int argc, char **argv) {
 void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_char* packet) {
     struct ether_header *ethernet = (struct ether_header *)packet;
     const struct sniff_ip *ip = NULL;
-    const struct sniff_tcp *tcp = NULL;
-    const struct sniff_udp *udp = NULL;
-    const u_char *payload = NULL;
     uint16_t ip_size;
-    uint16_t tcp_size = 0;
-    uint16_t udp_size = 0;
-    uint32_t payload_size = 0;
     uint32_t total_size = 0;
 
     /* Get IP header by counting past start of packet by size of physical layer
@@ -225,36 +219,8 @@ void capture_callback(u_char *user, const struct pcap_pkthdr* header, const u_ch
         return;
     }
 
-    /* Get TCP header by counting from the ip header + size of ip header. */
-    if(ip->ip_p == IPPROTO_TCP) {
-        tcp = (struct sniff_tcp*)((u_char*)ip+ip_size);
-        tcp_size = ip->ip_len - ip_size;
-
-        /* Again examples from tcpdump-group to check for malformed headers.*/
-        if(TH_OFF(tcp) >= 5 && tcp_size < TH_OFF(tcp)*4) {
-            fprintf(stderr, "capture_callback: Malformed TCP segment\n");
-            return;
-        }
-
-        /* First get payload offset in packet. */
-        payload = (u_char*)(packet + phys_size + ip_size + tcp_size);
-
-        /* Then segment size of payload. */
-        payload_size = ntohs(ip->ip_len) - (ip_size + tcp_size);
-    }
-
-    /* Get UDP header in the same way as TCP header. */
-    if(ip->ip_p == IPPROTO_UDP) {
-        udp = (struct sniff_udp*)((u_char*)ip+ip_size);
-        udp_size = ntohs(udp->uh_ulen);
-
-        /* Same drill as TCP above. */
-        payload = (u_char*)(packet + phys_size + ip_size + udp_size);
-        payload_size = ntohs(ip->ip_len) - (ip_size + udp_size);
-    }
-
-    /* Total size of packet in bytes, not counting the physical layer. */
-    total_size = phys_size+ip_size+tcp_size+udp_size+payload_size;
+    /* This is actually all we need for packet length. */
+    total_size = phys_size+ntohs(ip->ip_len);
 
     /* Check direction of traffic by comparing with current hosts hw address. */
     if(memcmp(mac_address, ethernet->ether_dhost, MAX_ETHER_LEN) == 0) {

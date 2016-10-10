@@ -146,4 +146,3 @@ int hwaddrscmp(uint8_t *, uint8_t *);
 void output_header(char *);
 void fprint_data(double, double);
 void capture_callback(u_char *, const struct pcap_pkthdr *, const u_char *);
-

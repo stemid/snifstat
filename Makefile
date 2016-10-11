@@ -1,26 +1,15 @@
-UNAME := $(shell uname)
-TARGET = snifstat
-platform_files = linux.c
-INSTALL_PREFIX ?= /usr/local/bin
+.PHONY: clean
+.PHONY: install
 
-ifeq ($(UNAME), Linux)
-	platform_files=linux.c
-endif
-ifeq ($(UNAME), OpenBSD)
-	platform_files=bsd.c
-endif
-ifeq ($(UNAME), Darwin)
-	platform_files=bsd.c
-endif
-ifeq ($(UNAME), FreeBSD)
-	platform_files=bsd.c
-endif
+INSTALL_PREFIX ?= /usr/local
 
-$(TARGET): snifstat.c
-	gcc -o $@ $(platform_files) $< -lpcap
+build:
+	$(MAKE) -C src
+
+install: build
+	install -m0755 src/snifstat $(INSTALL_PREFIX)/bin/
+	mkdir -p $(INSTALL_PREFIX)/share/man/man1
+	install -m0644 src/snifstat.1 $(INSTALL_PREFIX)/share/man/man1/
 
 clean:
-	rm -f *.o snifstat
-
-install:
-	install -m0755 snifstat $(INSTALL_PREFIX)/
+	rm -f src/*.o src/snifstat

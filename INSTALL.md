@@ -37,4 +37,4 @@ FreeBSD 10 by default does not come with sudo.
 
 The Makefile is very simple for now so if you need to install somewhere else use ``INSTALL_PREFIX`` in the make args.
 
-	$ make INSTALL_PREFIX=$HOME/bin install
+	$ make INSTALL_PREFIX=$HOME install

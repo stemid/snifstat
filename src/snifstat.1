@@ -1,0 +1,48 @@
+.TH SNIFSTAT 1
+.SH NAME
+snifstat \- Sniff packets from network and calculate packet traffic from packet size
+.SH SYNOPSIS
+.B snifstat
+\fB\-i\fR \fIinterface\fR
+[\fB\-hkmgdB\fR]
+[\fB\-t\fR \fItimeout\fR]
+.IR filter
+.SH DESCRIPTION
+.B snifstat
+captures packets on the given \fIinterface\fR using the filter (BPF). Every \fItimeout\fR interval the total sum of packet sizes is output.
+This tool requires root to capture packets.
+.SH OPTIONS
+.TP
+.BR \-i " \fIinterface\fR
+Specify capture device, or interface.
+.TP
+.BR \-h "
+Show the help text.
+.TP
+.BR \-k "
+Show output in kilobytes. Default is bytes.
+.TP
+.BR \-m "
+Show output in megabytes.
+.TP
+.BR \-g "
+Show output in gigabytes.
+.TP
+.BR \-d "
+Show debug output.
+.BR \-B "
+Batch mode output. Disables header, indent and padding of output, useful for scripting.
+.TP
+.BR \-t " \fItimeout\fR
+Change output timing, default is 1 second.
+.SH EXAMPLES
+Show traffic every 2 seconds in megabytes and capture tcp packets on interface en3.
+.PP
+.nf
+.RS
+sudo snifstat -t 2 -m -i en3 'tcp and dst port http'
+.RE
+.fi
+.PP
+.SH SEE ALSO
+.BR pcap-filter (7)

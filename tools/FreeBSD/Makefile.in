@@ -1,0 +1,13 @@
+# $fbsd_header
+
+RTNAME=$name
+PORTVERSION=$version
+CATEGORIES=$fbsd_categories
+MASTER_SITES=$fbsd_sites
+
+MAINTAINER=$contact
+COMMENT=$descr
+USES=gmake
+LIB_DEPENDS=libpcap.so:net/libpcap
+
+.include <bsd.port.mk>

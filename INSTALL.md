@@ -7,7 +7,7 @@ First of all check the releases page on github to see if there's a finished rele
 	$ cd snifstat-1.0
 	$ make
 
-On OpenBSD you must use gmake for GNU Make.
+On BSD you must use gmake for GNU Make.
 
 	$ gmake
 
@@ -23,7 +23,7 @@ On OpenBSD you must use gmake for GNU Make.
 
 	$ sudo pkg_add -r gmake gcc
 
-## FreeBSD 10.x dependencies
+## FreeBSD dependencies
 
 FreeBSD 10 by default does not come with sudo. 
 

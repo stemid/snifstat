@@ -1,7 +1,11 @@
 .PHONY: clean
 .PHONY: install
 
-INSTALL_PREFIX ?= /usr/local
+ifeq ($(UNAME), FreeBSD)
+	INSTALL_PREFIX=/usr/local
+endif
+
+INSTALL_PREFIX ?= /usr
 
 build:
 	$(MAKE) -C src

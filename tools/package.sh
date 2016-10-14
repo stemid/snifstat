@@ -5,7 +5,7 @@ name=snifstat
 version=1.1
 contact='Stefan Midjich <swehack at gmail dot com>'
 descr='Capture packets from network and calculate traffic from packet size.'
-files='/usr/local/bin/snifstat /usr/local/share/man/man1/snifstat.1'
+files='/usr/bin/snifstat /usr/share/man/man1/snifstat.1'
 
 test -z $1 && exit 1
 
@@ -30,11 +30,12 @@ if [ $1 = 'FreeBSD' ]; then
     fbsd_remote_file="${fbsd_sites}/${filename}"
     fbsd_distinfo=FreeBSD/distinfo
     fbsd_pkg_descr=FreeBSD/pkg-descr
+    fbsd_files='/usr/local/bin/snifstat /usr/local/share/man/man1/snifstat.1'
 
 	export name version contact descr fbsd_sites fbsd_categories fbsd_header
 
 	:> $pkg_plist_file
-	for file in $files; do
+	for file in $fbsd_files; do
 		echo ${file/\/} >> $pkg_plist_file
 	done
 

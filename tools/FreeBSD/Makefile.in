@@ -1,6 +1,6 @@
 # $fbsd_header
 
-RTNAME=$name
+PORTNAME=$name
 PORTVERSION=$version
 CATEGORIES=$fbsd_categories
 MASTER_SITES=$fbsd_sites

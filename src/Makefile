@@ -1,5 +1,6 @@
 UNAME := $(shell uname)
 TARGET = snifstat
+CC=cc
 platform_files = linux.c
 
 ifeq ($(UNAME), Linux)
@@ -16,4 +17,4 @@ ifeq ($(UNAME), FreeBSD)
 endif
 
 $(TARGET): snifstat.c
-	gcc -o $@ $(platform_files) $< -lpcap
+	$(CC) -o $@ $(platform_files) $< -lpcap

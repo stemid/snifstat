@@ -9,7 +9,6 @@ MAINTAINER=$contact
 COMMENT=$descr
 USES=gmake
 LIB_DEPENDS=libpcap.so:net/libpcap
-BUILD_DEPENDS=gcc:devel/gcc
 
 LICENSE=GPLv3
 

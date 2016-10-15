@@ -1,3 +1,5 @@
+all: build
+.PHONY: all
 .PHONY: clean
 .PHONY: install
 

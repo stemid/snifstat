@@ -12,6 +12,6 @@ LIB_DEPENDS=libpcap.so:net/libpcap
 
 LICENSE=GPLv3
 
-WRKSRC=${WRKDIR}/${PORTNAME}-${PORTNAME}-${PORTVERSION}
+WRKSRC=$fbsd_wrksrc
 
 .include <bsd.port.mk>

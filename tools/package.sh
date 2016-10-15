@@ -21,22 +21,23 @@ fi
 
 # FreeBSD ports
 if [ $1 = 'FreeBSD' ]; then
-	pkg_plist_file=FreeBSD/pkg-plist
+	fbsd_plist_file=FreeBSD/pkg-plist
 	fbsd_makefile=FreeBSD/Makefile
 	fbsd_header='$FreeBSD$'
 	fbsd_sites="https://github.com/stemid/snifstat/archive/"
 	fbsd_categories=net
-    filename="v${version}.tar.gz"
+    filename="${name}-${version}.tar.gz"
     fbsd_remote_file="${fbsd_sites}/${filename}"
     fbsd_distinfo=FreeBSD/distinfo
     fbsd_pkg_descr=FreeBSD/pkg-descr
     fbsd_files='/usr/local/bin/snifstat /usr/local/share/man/man1/snifstat.1'
+    fbsd_symlink="${name}-${version}"
 
 	export name version contact descr fbsd_sites fbsd_categories fbsd_header
 
-	:> $pkg_plist_file
+	:> $fbsd_plist_file
 	for file in $fbsd_files; do
-		echo ${file/\/} >> $pkg_plist_file
+		echo ${file/\/} >> $fbsd_plist_file
 	done
 
 	:> $fbsd_makefile
@@ -56,5 +57,9 @@ if [ $1 = 'FreeBSD' ]; then
     echo "SIZE (${filename}) = $fbsd_size" >> $fbsd_distinfo
 
 	# Now make tarball
-    tar -cvzf "${name}-${version}.tar.gz" -C FreeBSD Makefile pkg-plist distinfo pkg-descr
+    ln -s FreeBSD "$fbsd_symlink"
+    tar -cvzf "${name}-${version}.tar.gz" --exclude='Makefile.in' "${fbsd_symlink}"/*
+
+    # Cleanup files
+    rm -f $fbsd_plist_file $fbsd_makefile $fbsd_pkg_descr $fbsd_distinfo $fbsd_symlink
 fi

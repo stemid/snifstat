@@ -7,7 +7,7 @@ UNAME_S=$(shell uname)
 ifeq ($(UNAME_S), Linux)
 	INSTALL_PREFIX=/usr
 endif
-INSTALL_PREFIX ?= /usr/local
+INSTALL_PREFIX ?= $(PREFIX)
 
 build:
 	$(MAKE) -C src

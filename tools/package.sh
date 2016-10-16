@@ -2,7 +2,7 @@
 # Simple helper script to create packages
 
 name=snifstat
-version=1.1.2
+version=1.1.3
 contact='Stefan Midjich <swehack at gmail dot com>'
 descr='Capture packets from network and calculate traffic from packet size.'
 files='/usr/bin/snifstat /usr/share/man/man1/snifstat.1'

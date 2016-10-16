@@ -3,11 +3,11 @@ all: build
 .PHONY: clean
 .PHONY: install
 
-ifeq ($(UNAME), FreeBSD)
-	INSTALL_PREFIX=/usr/local
+UNAME_S=$(shell uname)
+ifeq ($(UNAME_S), Linux)
+	INSTALL_PREFIX=/usr
 endif
-
-INSTALL_PREFIX ?= /usr
+INSTALL_PREFIX ?= /usr/local
 
 build:
 	$(MAKE) -C src
